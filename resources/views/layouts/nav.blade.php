@@ -24,7 +24,7 @@
     </div>
 </nav> --}}
 
-<nav class="navbar navbar-expand-md navbar-dark bg-primary">
+<nav class="navbar navbar-expand-md navbar-dark bg-primary sticky-top">
     <div class="container py-2">
         <a href="{{ route('home') }}" class="navbar-brand mb-0 h1"><i class="bi-hexagon-fill me-2"></i> Data Master</a>
 

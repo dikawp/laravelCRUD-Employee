@@ -19,5 +19,10 @@
 <body>
     @include("layouts.nav")
     @yield('content')
+
+    {{-- Sweet Alert --}}
+    @include('sweetalert::alert')
+    @stack('scripts')
 </body>
 </html>
+

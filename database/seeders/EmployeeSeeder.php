@@ -14,6 +14,7 @@ class EmployeeSeeder extends Seeder
      */
     public function run(): void
     {
+        // NATIVE SEEDING
         // DB::table('employees')->insert([
         //     [
         //         'firstname' => 'Purnama',
@@ -37,6 +38,8 @@ class EmployeeSeeder extends Seeder
         //         'position_id' => 3
         //     ],
         // ]);
-        Employee::factory()->count(10)->create();
+
+        // FACTORY SEEDING
+        Employee::factory()->count(200)->create();
     }
 }

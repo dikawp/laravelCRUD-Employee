@@ -2,13 +2,17 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\EmployeesExport;
 use App\Models\Employee;
 use App\Models\Position;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Maatwebsite\Excel\Facades\Excel;
+use RealRashid\SweetAlert\Facades\Alert;
 
 // CODE BY RAMADIKA 12042100024
 class EmployeeController extends Controller
@@ -34,11 +38,14 @@ class EmployeeController extends Controller
         //     ->get();
 
         // ELOQUENT
-        $employees = Employee::all();
+        // $employees = Employee::all();
+
+        // SweetAlert Confirm Delete
+        confirmDelete();
 
         return view('employee.index', [
             'pageTitle' => $pageTitle,
-            'employees' => $employees
+            // 'employees' => $employees
         ]);
     }
 
@@ -118,6 +125,9 @@ class EmployeeController extends Controller
 
         $employee->save();
 
+        // SweetAlert Store Data
+        Alert::success('Added Successfully', 'Employee Data Added Successfully.');
+
         return redirect()->route('employees.index');
     }
 
@@ -127,21 +137,6 @@ class EmployeeController extends Controller
     public function show(string $id)
     {
         $pageTitle = 'Employee Detail';
-
-        // RAW SQL QUERY
-        // $employee = collect(DB::select('
-        //     select *, employees.id as employee_id, positions.name as position_name
-        //     from employees
-        //     left join positions on employees.position_id = positions.id
-        //     where employees.id = ?
-        // ', [$id]))->first();
-
-        // BUILDER SQL QUERY
-        // $employee = DB::table('employees')
-        // ->leftJoin('positions', 'employees.position_id', '=', 'positions.id')
-        // ->select('employees.*', 'employees.id as employee_id', 'positions.name as position_name')
-        // ->where('employees.id', '=', $id)
-        // ->first();
 
         //ELOQUENT
         $employee = Employee::find($id);
@@ -155,15 +150,6 @@ class EmployeeController extends Controller
     {
         //
         $pageTitle = 'Edit Employee';
-
-        // Query Builder
-        // $employee = DB::table('employees')
-        //     ->leftJoin('positions', 'employees.position_id', '=', 'positions.id')
-        //     ->select('employees.*', 'employees.id as employee_id', 'positions.name as position_name')
-        //     ->where('employees.id', '=', $id)
-        //     ->first();
-
-        // $positions = DB::table('positions')->get();
 
         //ELOQUENT
         $positions = Position::all();
@@ -195,16 +181,6 @@ class EmployeeController extends Controller
             return redirect()->back()->withErrors($validator);
         }
 
-        // UPDATE QUERY (BUILDER)
-        // DB::table('employees')
-        //     ->where('id', $id)->update([
-        //     'firstname' => $request->firstName,
-        //     'lastname' => $request->lastName,
-        //     'email' => $request->email,
-        //     'age' => $request->age,
-        //     'position_id' => $request->position,]);
-
-
         $file = $request->file('cv');
 
         if ($file != null){
@@ -235,6 +211,9 @@ class EmployeeController extends Controller
 
         $employee->save();
 
+        // SweetAlert Update Data
+        Alert::success('Changed Successfully', 'Employee Data Changed Successfully.');
+
         return redirect()->route('employees.index');
     }
 
@@ -243,17 +222,15 @@ class EmployeeController extends Controller
      */
     public function destroy(string $id)
     {
-        // QUERY BUILDER
-        // DB::table('employees')
-        //     ->where('id', $id)
-        //     ->delete();
-
         $employee = Employee::find($id);
         $encryptedFilename = 'public/files/'.$employee->encrypted_filename;
         Storage::delete($encryptedFilename);
 
         //ELOQUENT
         Employee::find($id)->delete();
+
+        // SweetAlert Delete Data
+        Alert::success('Deleted Successfully', 'Employee Data Deleted Successfully.');
 
         return redirect()->route('employees.index');
     }
@@ -268,5 +245,35 @@ class EmployeeController extends Controller
         if(Storage::exists($encryptedFilename)) {
             return Storage::download($encryptedFilename, $downloadFilename);
         }
+    }
+
+    public function getData(Request $request)
+    {
+        $employees = Employee::with('position');
+
+        if ($request->ajax()) {
+            return datatables()->of($employees)
+                ->addIndexColumn()
+                ->addColumn('actions', function($employee) {
+                    return view('employee.actions', compact('employee'));
+                })
+                ->toJson();
+        }
+    }
+
+    // EXCEL
+    public function exportExcel()
+    {
+        return Excel::download(new EmployeesExport, 'employees.xlsx');
+    }
+
+    // PDF
+    public function exportPdf()
+    {
+        $employees = Employee::all();
+
+        $pdf = Pdf::loadView('employee.export_pdf', compact('employees'));
+
+        return $pdf->download('employees.pdf');
     }
 }
